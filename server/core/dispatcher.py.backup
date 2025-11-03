@@ -1,0 +1,217 @@
+"""
+🧠 Surooh Core - Core Dispatcher
+نواة التوزيع - اختيار البوت المناسب وتنفيذ المهام
+"""
+
+from typing import Dict, Optional, Any
+from loguru import logger
+
+try:
+    from .delegation import delegation
+except ImportError:
+    from delegation import delegation
+
+class CoreDispatcher:
+    """نواة التوزيع - عقل التنفيذ لسُروح"""
+    
+    def __init__(self):
+        self.delegation = delegation
+        
+        # خريطة المهام → الأدوار → البوتات
+        self.task_to_role_map = {
+            # مهام دعم العملاء
+            "handle_inquiry": "customer_support",
+            "create_ticket": "customer_support",
+            "check_order_status": "customer_support",
+            "process_refund": "customer_support",
+            
+            # مهام التسعير
+            "analyze_pricing": "pricing_analyst",
+            "generate_quote": "pricing_analyst",
+            "compare_competitors": "pricing_analyst",
+            "update_price_list": "pricing_analyst",
+            
+            # مهام التحليلات
+            "generate_report": "analytics_engine",
+            "analyze_trends": "analytics_engine",
+            "predict_demand": "analytics_engine",
+            "calculate_metrics": "analytics_engine",
+            
+            # مهام معالجة الطلبات
+            "process_order": "order_processor",
+            "update_inventory": "order_processor",
+            "generate_invoice": "order_processor",
+            "track_shipment": "order_processor",
+        }
+        
+        # البوتات المتاحة (يمكن ربطها بقاعدة البيانات لاحقاً)
+        self.available_bots = {
+            "customer_support": {
+                "name": "بوت دعم العملاء",
+                "status": "active",
+                "endpoint": "/api/bots/customer-support"
+            },
+            "pricing_analyst": {
+                "name": "بوت تحليل التسعير",
+                "status": "active",
+                "endpoint": "/api/bots/pricing-analyst"
+            },
+            "analytics_engine": {
+                "name": "محرك التحليلات",
+                "status": "active",
+                "endpoint": "/api/bots/analytics-engine"
+            },
+            "order_processor": {
+                "name": "معالج الطلبات",
+                "status": "active",
+                "endpoint": "/api/bots/order-processor"
+            }
+        }
+        
+        logger.info("🧠 Core Dispatcher initialized - Execution brain ready")
+    
+    def dispatch_task(self, task: str, payload: Optional[Dict[str, Any]] = None) -> Dict:
+        """
+        توزيع المهمة للبوت المناسب
+        
+        Args:
+            task: اسم المهمة المطلوب تنفيذها
+            payload: البيانات المصاحبة للمهمة
+        
+        Returns:
+            Dict: نتيجة التنفيذ
+        """
+        payload = payload or {}
+        
+        logger.info(f"📥 Dispatching task: {task}")
+        
+        # 1. تحديد الدور المناسب للمهمة
+        role = self.task_to_role_map.get(task)
+        
+        if not role:
+            logger.warning(f"⚠️ Unknown task: {task}")
+            return {
+                "success": False,
+                "error": f"مهمة غير معروفة: {task}",
+                "task": task
+            }
+        
+        logger.info(f"🎯 Task '{task}' mapped to role: {role}")
+        
+        # 2. التحقق من الصلاحيات
+        permission_check = self.delegation.check_permission(role, task)
+        
+        if not permission_check["allowed"]:
+            logger.warning(f"🚫 Permission denied: {permission_check['reason']}")
+            return {
+                "success": False,
+                "error": permission_check["reason"],
+                "requires_approval": permission_check["requires_approval"],
+                "task": task,
+                "role": role
+            }
+        
+        logger.info(f"✅ Permission granted: {permission_check['reason']}")
+        
+        # 3. اختيار البوت المناسب
+        bot = self.available_bots.get(role)
+        
+        if not bot:
+            logger.error(f"❌ No bot available for role: {role}")
+            return {
+                "success": False,
+                "error": f"لا يوجد بوت متاح للدور: {role}",
+                "task": task,
+                "role": role
+            }
+        
+        if bot["status"] != "active":
+            logger.error(f"❌ Bot is not active: {bot['name']}")
+            return {
+                "success": False,
+                "error": f"البوت غير نشط: {bot['name']}",
+                "task": task,
+                "bot": bot["name"]
+            }
+        
+        logger.info(f"🤖 Selected bot: {bot['name']} ({bot['endpoint']})")
+        
+        # 4. تنفيذ المهمة (محاكاة - يمكن استبدالها باستدعاء حقيقي)
+        result = self._execute_task(bot, task, payload)
+        
+        logger.info(f"✅ Task '{task}' executed successfully by {bot['name']}")
+        
+        return result
+    
+    def _execute_task(self, bot: Dict, task: str, payload: Dict) -> Dict:
+        """
+        تنفيذ المهمة (محاكاة)
+        في الإنتاج، هنا يتم استدعاء البوت الفعلي
+        """
+        
+        # محاكاة تنفيذ المهمة حسب نوعها
+        mock_results = {
+            "handle_inquiry": {
+                "response": "تم استلام استفسارك وسيتم الرد عليك قريباً",
+                "ticket_id": "TKT-2025-001"
+            },
+            "analyze_pricing": {
+                "analysis": "تحليل الأسعار يشير إلى فرصة تنافسية في السوق",
+                "recommended_price": 150.00,
+                "confidence": 0.87
+            },
+            "generate_report": {
+                "report_id": "RPT-2025-001",
+                "summary": "تقرير التحليلات الشهري - أكتوبر 2025",
+                "metrics": {
+                    "total_sales": 125000,
+                    "growth_rate": 15.5
+                }
+            },
+            "process_order": {
+                "order_id": "ORD-2025-001",
+                "status": "processed",
+                "invoice_generated": True
+            }
+        }
+        
+        # الحصول على نتيجة محاكاة أو نتيجة افتراضية
+        mock_result = mock_results.get(task, {
+            "message": f"تم تنفيذ المهمة {task} بنجاح",
+            "data": payload
+        })
+        
+        return {
+            "success": True,
+            "task": task,
+            "bot": bot["name"],
+            "bot_endpoint": bot["endpoint"],
+            "result": mock_result,
+            "timestamp": "2025-10-16T22:20:00Z"
+        }
+    
+    def get_available_tasks(self) -> list:
+        """الحصول على قائمة المهام المتاحة"""
+        return list(self.task_to_role_map.keys())
+    
+    def get_bot_status(self, role: str) -> Optional[Dict]:
+        """الحصول على حالة بوت معين"""
+        return self.available_bots.get(role)
+    
+    def health_check(self) -> Dict:
+        """فحص صحة النظام"""
+        active_bots = sum(1 for bot in self.available_bots.values() if bot["status"] == "active")
+        
+        return {
+            "status": "healthy",
+            "dispatcher": "operational",
+            "delegation": "loaded",
+            "total_bots": len(self.available_bots),
+            "active_bots": active_bots,
+            "available_tasks": len(self.task_to_role_map),
+            "roles": self.delegation.get_all_roles()
+        }
+
+
+# 🌍 نسخة واحدة عالمية
+dispatcher = CoreDispatcher()

@@ -1,0 +1,70 @@
+{
+  "nicholas": {
+    "connectedTo": ["side", "matrix", "academy", "mailhub", "customer-service", "scp", "docs", "b2b", "b2c", "accounting", "ce", "secretary", "wallet", "multibot", "v2-integration", "intelligence-feed"],
+    "reason": "Central Hub - all platforms connect through UIL"
+  },
+  "side": {
+    "connectedTo": ["nicholas", "academy", "matrix"],
+    "reason": "Federation system managing 12 external SIDE nodes"
+  },
+  "matrix": {
+    "connectedTo": ["nicholas", "side"],
+    "reason": "Consciousness system integrated with federation"
+  },
+  "academy": {
+    "connectedTo": ["nicholas", "side"],
+    "reason": "Educational platform syncing with federation"
+  },
+  "mailhub": {
+    "connectedTo": ["nicholas"],
+    "reason": "Email system via UIL"
+  },
+  "customer-service": {
+    "connectedTo": ["nicholas"],
+    "reason": "Support platform via UIL"
+  },
+  "scp": {
+    "connectedTo": ["nicholas"],
+    "reason": "Chat platform via UIL"
+  },
+  "docs": {
+    "connectedTo": ["nicholas"],
+    "reason": "Document management via UIL"
+  },
+  "b2b": {
+    "connectedTo": ["nicholas"],
+    "reason": "Business commerce via UIL"
+  },
+  "b2c": {
+    "connectedTo": ["nicholas"],
+    "reason": "Consumer commerce via UIL"
+  },
+  "accounting": {
+    "connectedTo": ["nicholas"],
+    "reason": "Financial management via UIL"
+  },
+  "ce": {
+    "connectedTo": ["nicholas"],
+    "reason": "Export management via UIL"
+  },
+  "secretary": {
+    "connectedTo": ["nicholas"],
+    "reason": "Administrative assistant via UIL"
+  },
+  "wallet": {
+    "connectedTo": ["nicholas"],
+    "reason": "Payment system via UIL"
+  },
+  "multibot": {
+    "connectedTo": ["nicholas"],
+    "reason": "Bot orchestration via UIL"
+  },
+  "v2-integration": {
+    "connectedTo": ["nicholas"],
+    "reason": "Legacy integration via UIL"
+  },
+  "intelligence-feed": {
+    "connectedTo": ["nicholas"],
+    "reason": "External data connectors via Intelligence API"
+  }
+}

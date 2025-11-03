@@ -1,0 +1,398 @@
+# 🛠️ ملفات التنفيذ الكاملة لنظام سُروح الذكي
+
+## 1. الهيكل النهائي للملفات
+
+```
+surooh-os/
+│
+├── app/                      # واجهة الويب
+│   ├── frontend/             # React/Next.js
+│   └── backend/              # FastAPI
+│
+├── core/                     # النواة الرئيسية
+│   ├── __init__.py
+│   ├── surooh_core.py        # الصنف الرئيسي
+│   ├── intelligence/
+│   │   ├── orchestrator.py
+│   │   └── processor.py
+│   ├── awareness/
+│   │   ├── self_awareness.py
+│   │   └── emotion_engine.py
+│   └── voice/
+│       ├── live_voice.py
+│       └── voice_analysis.py
+│
+├── bots/                     # الوحدات التنفيذية
+│   ├── __init__.py
+│   ├── registry.py
+│   ├── accounting/
+│   └── legal/
+│
+├── memory/                   # نظام الذاكرة
+│   ├── __init__.py
+│   ├── short_term/
+│   ├── long_term/
+│   └── life_logger.py
+│
+├── config/
+│   ├── __init__.py
+│   ├── settings.py
+│   └── surooh_manifest.json
+│
+├── docker-compose-v2.yml
+└── requirements.txt
+```
+
+## 2. الملفات الأساسية التنفيذية
+
+### 2.1 `core/surooh_core.py` - النواة الرئيسية
+
+```python
+import logging
+from typing import Dict, Any
+from .intelligence.orchestrator import OrchestratorPro
+from .awareness.self_awareness import SelfAwareness
+from .voice.live_voice import LiveVoiceSystem
+from memory.life_logger import LifeLogger
+
+class SuroohCore:
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.logger = logging.getLogger('surooh')
+        self.setup_core_components()
+        
+    def setup_core_components(self):
+        """تهيئة جميع مكونات النظام"""
+        self.orchestrator = OrchestratorPro(self.config)
+        self.awareness = SelfAwareness()
+        self.voice_system = LiveVoiceSystem()
+        self.life_logger = LifeLogger()
+        
+        self.logger.info("Core components initialized")
+    
+    def process_input(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """مسار المعالجة الرئيسي"""
+        try:
+            # 1. تحديث الوعي الذاتي
+            self.awareness.update_state(input_data)
+            
+            # 2. معالجة المدخلات
+            processed = self.orchestrator.process(input_data)
+            
+            # 3. تسجيل التفاعل
+            self.life_logger.log_interaction(
+                input=input_data,
+                output=processed,
+                context=self.awareness.current_state
+            )
+            
+            return processed
+            
+        except Exception as e:
+            self.logger.error(f"Processing error: {str(e)}")
+            return {"error": "System malfunction", "details": str(e)}
+```
+
+### 2.2 `core/intelligence/orchestrator.py` - المحور الذكي
+
+```python
+from typing import Dict, Any
+from ..awareness.emotion_engine import EmotionEngine
+from ..bots.registry import BotRegistry
+
+class OrchestratorPro:
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.emotion_engine = EmotionEngine()
+        self.bot_registry = BotRegistry()
+    
+    def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """معالجة الطلب مع السياق العاطفي"""
+        # تحليل المشاعر
+        emotion_analysis = self.emotion_engine.analyze(input_data)
+        
+        # تحديد مسار المعالجة
+        if self._requires_bot(input_data):
+            bot = self.bot_registry.get_bot(input_data['type'])
+            return bot.handle(input_data)
+        else:
+            return self._default_processing(input_data, emotion_analysis)
+    
+    def _requires_bot(self, input_data: Dict[str, Any]) -> bool:
+        """تحديد إذا كان الطلب يحتاج بوت متخصص"""
+        return input_data.get('type') in ['accounting', 'legal', 'design']
+    
+    def _default_processing(self, input_data: Dict[str, Any], emotion: Dict[str, Any]) -> Dict[str, Any]:
+        """المعالجة الافتراضية مع مراعاة الحالة العاطفية"""
+        return {
+            "response": "تم معالجة طلبك",
+            "emotion_adjusted": emotion['suggested_tone'],
+            "context": input_data.get('context', {})
+        }
+```
+
+### 2.3 `core/awareness/self_awareness.py` - الوعي الذاتي
+
+```python
+from datetime import datetime
+from typing import Dict, Any
+
+class SelfAwareness:
+    def __init__(self):
+        self.current_state = {
+            "mood": "neutral",
+            "energy": 100.0,
+            "active_since": datetime.now(),
+            "interaction_count": 0
+        }
+    
+    def update_state(self, interaction: Dict[str, Any]):
+        """تحديث حالة النظام بناءً على التفاعل"""
+        self.current_state["interaction_count"] += 1
+        self.current_state["energy"] -= 0.3  # استهلاك طاقة لكل تفاعل
+        
+        # تحديث المزاج حسب نوع التفاعل
+        if interaction.get('urgency') == 'high':
+            self.current_state["mood"] = "focused"
+        elif interaction.get('emotion') == 'positive':
+            self.current_state["mood"] = "happy"
+    
+    def get_current_state(self) -> Dict[str, Any]:
+        """الحصول على الحالة الحالية"""
+        return {
+            **self.current_state,
+            "uptime": (datetime.now() - self.current_state["active_since"]).total_seconds()
+        }
+```
+
+## 3. واجهة الويب (React + FastAPI)
+
+### 3.1 `app/frontend/pages/index.js` - الواجهة الرئيسية
+
+```jsx
+import React, { useState } from 'react';
+import GodView from '../components/GodView';
+import ChatInterface from '../components/ChatInterface';
+
+export default function Home() {
+  const [activeTab, setActiveTab] = useState('chat');
+  const [systemStatus, setSystemStatus] = useState({});
+
+  return (
+    <div className="container">
+      <header>
+        <h1>سُروح - النظام الذكي</h1>
+        <nav>
+          <button onClick={() => setActiveTab('chat')}>محادثة</button>
+          <button onClick={() => setActiveTab('godview')}>واجهة إشرافية</button>
+        </nav>
+      </header>
+
+      <main>
+        {activeTab === 'chat' ? (
+          <ChatInterface />
+        ) : (
+          <GodView status={systemStatus} />
+        )}
+      </main>
+    </div>
+  );
+}
+```
+
+### 3.2 `app/backend/main.py` - واجهة FastAPI
+
+```python
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from core.surooh_core import SuroohCore
+from config import settings
+
+app = FastAPI()
+surooh = SuroohCore(settings.CONFIG)
+
+# إعدادات CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/api/process")
+async def process_input(input_data: dict):
+    """واجهة معالجة المدخلات"""
+    response = surooh.process_input(input_data)
+    return response
+
+@app.get("/api/system-status")
+async def get_status():
+    """الحصول على حالة النظام"""
+    return {
+        "status": "running",
+        "details": surooh.awareness.get_current_state()
+    }
+```
+
+## 4. ملفات التكوين والتنصيب
+
+### 4.1 `docker-compose-v2.yml`
+
+```yaml
+version: '3.8'
+
+services:
+  surooh-core:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./memory:/app/memory
+    environment:
+      - MODE=production
+    depends_on:
+      - redis
+      - faiss
+
+  surooh-web:
+    build: ./app
+    ports:
+      - "3000:3000"
+    environment:
+      - API_URL=http://surooh-core:8000
+    depends_on:
+      - surooh-core
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  faiss:
+    image: faiss-service:latest
+    ports:
+      - "9000:9000"
+
+  life-logger:
+    image: postgres:13
+    environment:
+      - POSTGRES_PASSWORD=surooh
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  redis_data:
+  pg_data:
+```
+
+### 4.2 `requirements.txt`
+
+```
+fastapi==0.95.2
+uvicorn==0.22.0
+python-dotenv==1.0.0
+numpy==1.24.3
+redis==4.5.5
+sqlalchemy==2.0.15
+python-multipart==0.0.6
+```
+
+## 5. ملفات إضافية أساسية
+
+### 5.1 `memory/life_logger.py`
+
+```python
+import sqlite3
+from datetime import datetime
+from typing import Dict, Any
+
+class LifeLogger:
+    def __init__(self, db_path: str = "memory/life_logs.db"):
+        self.conn = sqlite3.connect(db_path)
+        self._init_db()
+    
+    def _init_db(self):
+        """تهيئة قاعدة البيانات"""
+        cursor = self.conn.cursor()
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS interactions (
+            id INTEGER PRIMARY KEY,
+            timestamp TEXT NOT NULL,
+            input_type TEXT NOT NULL,
+            input_data TEXT,
+            output_data TEXT,
+            context TEXT
+        )
+        """)
+        self.conn.commit()
+    
+    def log_interaction(self, input_data: Dict[str, Any], output_data: Dict[str, Any], context: Dict[str, Any]):
+        """تسجيل تفاعل جديد"""
+        cursor = self.conn.cursor()
+        cursor.execute("""
+        INSERT INTO interactions 
+        (timestamp, input_type, input_data, output_data, context)
+        VALUES (?, ?, ?, ?, ?)
+        """, (
+            datetime.now().isoformat(),
+            input_data.get('type', 'unknown'),
+            str(input_data),
+            str(output_data),
+            str(context)
+        ))
+        self.conn.commit()
+```
+
+### 5.2 `config/settings.py`
+
+```python
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+CONFIG = {
+    "system": {
+        "name": "سُروح",
+        "version": "2.0.0",
+        "mode": os.getenv("MODE", "development")
+    },
+    "memory": {
+        "short_term": {
+            "type": "redis",
+            "host": os.getenv("REDIS_HOST", "redis"),
+            "port": os.getenv("REDIS_PORT", 6379)
+        },
+        "long_term": {
+            "type": "faiss",
+            "host": os.getenv("FAISS_HOST", "faiss"),
+            "port": os.getenv("FAISS_PORT", 9000)
+        }
+    },
+    "voice": {
+        "enabled": True,
+        "model": os.getenv("VOICE_MODEL", "whisper-medium")
+    }
+}
+```
+
+## 6. خطوات التشغيل
+
+1. **بناء وتشغيل النظام**:
+```bash
+docker-compose -f docker-compose-v2.yml up --build
+```
+
+2. **الوصول للواجهات**:
+- الواجهة الأمامية: http://localhost:3000
+- واجهة API: http://localhost:8000/docs
+- God View: http://localhost:3000/godview
+
+3. **مراقبة السجلات**:
+```bash
+docker-compose logs -f surooh-core
+```
+
+هذه الملفات تشكل الهيكل البرمجي الكامل لنظام سُروح الذكي، جاهزة للتنفيذ الفعلي والتطوير المستقبلي. يمكن البدء بالتنصيب مباشرة ثم التوسع حسب الحاجة.

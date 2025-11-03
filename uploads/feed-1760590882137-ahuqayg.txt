@@ -1,0 +1,188 @@
+# Dockerized Surooh AI System with Deployment Instructions
+
+Here's how to package the Surooh AI system with Docker Compose for easy deployment on your server.
+
+## Project Structure
+
+```
+surooh_ai/
+├── docker-compose.yml
+├── Dockerfile
+├── .env
+├── requirements.txt
+├── src/
+│   ├── brain.py
+│   ├── server.py
+│   ├── utils/
+│   │   └── file_processor.py
+│   └── integrations/
+│       └── telegram_bot.py
+└── memory/
+    ├── vector_store/
+    └── uploads/
+```
+
+## 1. Dockerfile
+
+```dockerfile
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-ara \
+    poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
+
+# Copy requirements file first to leverage Docker cache
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the project
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/memory/vector_store \
+    && mkdir -p /app/memory/uploads
+
+# Expose the port the app runs on
+EXPOSE 8000
+
+# Command to run the application
+CMD ["python", "src/server.py"]
+```
+
+## 2. docker-compose.yml
+
+```yaml
+version: '3.8'
+
+services:
+  surooh:
+    build: .
+    container_name: surooh_ai
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./memory:/app/memory
+      - ./src:/app/src
+    environment:
+      - PYTHONPATH=/app
+```
+
+## 3. Deployment Instructions
+
+1. First, create the project structure on your server:
+
+```bash
+mkdir -p surooh_ai/src/utils surooh_ai/src/integrations surooh_ai/memory/vector_store surooh_ai/memory/uploads
+```
+
+2. Create the configuration files:
+
+```bash
+# Create Dockerfile
+cat > surooh_ai/Dockerfile << 'EOL'
+[PASTE THE DOCKERFILE CONTENT ABOVE]
+EOL
+
+# Create docker-compose.yml
+cat > surooh_ai/docker-compose.yml << 'EOL'
+[PASTE THE DOCKER-COMPOSE CONTENT ABOVE]
+EOL
+
+# Create .env file (you'll need to edit this with your actual keys)
+cat > surooh_ai/.env << 'EOL'
+OPENAI_API_KEY=your_openai_api_key_here
+API_KEY=your_secret_api_key_here
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+EOL
+
+# Create requirements.txt
+cat > surooh_ai/requirements.txt << 'EOL'
+fastapi==0.95.2
+uvicorn==0.22.0
+openai==0.27.8
+python-dotenv==1.0.0
+faiss-cpu==1.7.4
+numpy==1.24.3
+pytesseract==0.3.10
+PyMuPDF==1.22.5
+python-docx==0.8.11
+Pillow==9.5.0
+python-telegram-bot==20.3
+pydantic==1.10.7
+EOL
+```
+
+3. Copy the Python source files to their respective locations:
+   - `brain.py` → `surooh_ai/src/`
+   - `server.py` → `surooh_ai/src/`
+   - `file_processor.py` → `surooh_ai/src/utils/`
+   - `telegram_bot.py` → `surooh_ai/src/integrations/`
+
+4. Deploy the application:
+
+```bash
+cd surooh_ai
+docker-compose up -d --build
+```
+
+## 4. Zip File Creation
+
+To create a zip file of the complete project:
+
+```bash
+zip -r surooh_ai_docker.zip surooh_ai/
+```
+
+## 5. Post-Deployment Steps
+
+1. Verify the container is running:
+```bash
+docker ps
+```
+
+2. Check logs:
+```bash
+docker logs surooh_ai
+```
+
+3. Test the API:
+```bash
+curl -X POST "http://localhost:8000/message" \
+  -H "X-API-Key: your_secret_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"conversation_id": "test1", "message": "مرحبًا، من أنت؟"}'
+```
+
+## Important Notes
+
+1. Make sure to edit the `.env` file with your actual API keys before deployment.
+
+2. The memory directory is mounted as a volume, so your data will persist between container restarts.
+
+3. For production use, consider adding:
+   - Nginx as a reverse proxy
+   - HTTPS/TLS encryption
+   - Resource limits in docker-compose.yml
+   - Proper backup strategy for the memory volume
+
+4. The system requires these ports to be open:
+   - 8000 (FastAPI server)
+   - If using Telegram bot, outbound HTTPS access
+
+Would you like me to provide any additional configuration details or modify any part of this deployment setup?

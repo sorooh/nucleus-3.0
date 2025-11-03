@@ -1,0 +1,33 @@
+{
+  "nodeId": "side-local-test",
+  "nodeName": "SIDE Local Test Node",
+  "arabicName": "سِيدا - عقدة الاختبار المحلية",
+  "nodeType": "development",
+  "organizationId": "surooh-holding",
+  "nucleusLevel": "main",
+  "nodeUrl": "http://localhost:5000",
+  "permissions": [
+    "code:sync",
+    "knowledge:share",
+    "config:read"
+  ],
+  "allowedEndpoints": [
+    "/api/federation/*",
+    "/api/code/*",
+    "/api/knowledge/*"
+  ],
+  "capabilities": {
+    "code_sync": true,
+    "knowledge_share": true,
+    "realtime_updates": true,
+    "code_generation": true,
+    "pattern_matching": true
+  },
+  "sideVersion": "1.0.0-local",
+  "tags": [
+    "local",
+    "test",
+    "development",
+    "surooh-side"
+  ]
+}

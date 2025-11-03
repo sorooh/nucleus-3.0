@@ -1,0 +1,77 @@
+{
+  "reportId": "report-1761518927385",
+  "timestamp": "2025-10-26T22:48:47.385Z",
+  "phase": "Phase 9.5",
+  "nodeId": "side-node-main-test",
+  "tests": [
+    {
+      "name": "Knowledge Sync Test",
+      "status": "pass",
+      "duration": 306,
+      "details": {
+        "syncId": "sync-test-phase9.5-1761518926702-917cfa5a",
+        "itemsProcessed": 2,
+        "checksumVerified": true
+      }
+    },
+    {
+      "name": "Duplicate Sync Rejection Test",
+      "status": "pass",
+      "duration": 321,
+      "details": {
+        "syncId": "sync-duplicate-test-1761518927008",
+        "duplicateDetected": true,
+        "message": "Data already synced (duplicate)"
+      }
+    },
+    {
+      "name": "Bidirectional Sync Test",
+      "status": "pass",
+      "duration": 33,
+      "details": {
+        "syncId": "sync-nicholas-phase9.5-1761518927330",
+        "direction": "outbound",
+        "status": "pending"
+      }
+    }
+  ],
+  "statistics": {
+    "totalSyncs": 5,
+    "inboundSyncs": 3,
+    "outboundSyncs": 2,
+    "successRate": 60,
+    "averageResponseTime": 220
+  },
+  "security": {
+    "jwtVerified": true,
+    "hmacVerified": true,
+    "rsaVerified": true,
+    "checksumVerified": true,
+    "nonceProtection": true,
+    "timestampValidation": true
+  },
+  "auditTrail": [
+    {
+      "syncId": "sync-test-phase9.5-1761518926702-917cfa5a",
+      "direction": "inbound",
+      "status": "verified",
+      "checksum": "3d5d9d784e17cc915ed3ecae5c71a7deb3073781ab682a81a25465a6cd2687db",
+      "timestamp": "2025-10-26T22:48:47.008Z"
+    },
+    {
+      "syncId": "sync-nicholas-phase9.5-1761518927330",
+      "direction": "outbound",
+      "status": "pending",
+      "checksum": "d3c92782327abf3274b6682fb03d4291302d1b92ac14763f08f980bda81251b3",
+      "timestamp": "2025-10-26T22:48:47.363Z"
+    }
+  ],
+  "successIndicators": {
+    "handshakeActive": true,
+    "syncEndpointWorking": true,
+    "auditLogPresent": true,
+    "checksumMatch": true,
+    "duplicateRejection": true,
+    "nodeStatusActive": true
+  }
+}

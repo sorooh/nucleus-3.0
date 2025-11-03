@@ -1,0 +1,26 @@
+{
+  "name": "empire-runner",
+  "version": "1.0.0",
+  "description": "🚀 Emperor Nicholas - Phase Ω (11.5) - Autonomous Bootstrap Runner",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "pino": "^9.4.0",
+    "pino-pretty": "^11.2.2",
+    "zod": "^3.23.8",
+    "node-cron": "^3.0.3",
+    "undici": "^6.19.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.2",
+    "@types/node": "^22.10.2",
+    "@types/node-cron": "^3.0.11"
+  }
+}

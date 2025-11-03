@@ -1,0 +1,71 @@
+# 🔐 Surooh Core - Smart Delegation Policies
+# تحديد صلاحيات التفويض للبوتات والمهام
+
+version: "1.0"
+name: "Surooh Core Delegation Policies"
+
+# 📋 تعريف الأدوار والصلاحيات
+roles:
+  customer_support:
+    name: "دعم العملاء"
+    allowed_tasks:
+      - "handle_inquiry"
+      - "create_ticket"
+      - "check_order_status"
+      - "process_refund"
+    permissions:
+      - "read_customer_data"
+      - "update_ticket"
+      - "send_notification"
+    
+  pricing_analyst:
+    name: "محلل التسعير"
+    allowed_tasks:
+      - "analyze_pricing"
+      - "generate_quote"
+      - "compare_competitors"
+      - "update_price_list"
+    permissions:
+      - "read_pricing_data"
+      - "write_pricing_data"
+      - "access_market_data"
+  
+  analytics_engine:
+    name: "محرك التحليلات"
+    allowed_tasks:
+      - "generate_report"
+      - "analyze_trends"
+      - "predict_demand"
+      - "calculate_metrics"
+    permissions:
+      - "read_all_data"
+      - "execute_queries"
+      - "access_historical_data"
+  
+  order_processor:
+    name: "معالج الطلبات"
+    allowed_tasks:
+      - "process_order"
+      - "update_inventory"
+      - "generate_invoice"
+      - "track_shipment"
+    permissions:
+      - "read_order_data"
+      - "write_order_data"
+      - "update_inventory"
+      - "access_shipping_api"
+
+# 🚫 المهام المحظورة (تتطلب موافقة يدوية)
+restricted_tasks:
+  - "delete_customer"
+  - "cancel_all_orders"
+  - "modify_system_config"
+  - "access_financial_records"
+  - "export_all_data"
+
+# ⚙️ إعدادات التفويض
+settings:
+  require_approval_for_restricted: true
+  auto_delegate_enabled: true
+  max_delegation_depth: 3
+  log_all_delegations: true

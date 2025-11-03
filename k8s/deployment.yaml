@@ -1,0 +1,146 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nucleus-core
+  labels:
+    app: nucleus-core
+    version: v3.0
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: nucleus-core
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: nucleus-core
+        version: v3.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5000"
+        prometheus.io/path: "/api/ugw/monitoring/metrics"
+    spec:
+      containers:
+      - name: nucleus
+        image: nucleus:3.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "5000"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: database-url
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: openai-api-key
+              optional: true
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: anthropic-api-key
+              optional: true
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: groq-api-key
+              optional: true
+        - name: SILICONFLOW_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: siliconflow-api-key
+              optional: true
+        - name: MISTRAL_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: mistral-api-key
+              optional: true
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: hf-token
+              optional: true
+        - name: UPSTASH_REDIS_REST_URL
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: upstash-redis-url
+        - name: UPSTASH_REDIS_REST_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: upstash-redis-token
+        - name: UPSTASH_VECTOR_REST_URL
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: upstash-vector-url
+              optional: true
+        - name: UPSTASH_VECTOR_REST_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: upstash-vector-token
+              optional: true
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: jwt-secret
+        - name: SESSION_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: nucleus-secrets
+              key: session-secret
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/ugw/monitoring/health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/ugw/monitoring/health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        fsGroup: 1001

@@ -1,0 +1,248 @@
+# التعديلات المطلوبة على سكريبت سروح
+
+سأقوم بإجراء التعديلات اللازمة لتصحيح المشاكل المذكورة:
+
+## 1. إصلاح مشكلة مكتبة DeepSeek
+
+```python
+# نستبدل هذا السطر:
+# from deepseek_api import DeepSeek
+
+# بـ هذا الكود الذي يستخدم requests مباشرة:
+import requests
+
+class DeepSeek:
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.base_url = "https://api.deepseek.com/v1"
+        
+    def generate(self, model: str, messages: List[Dict], temperature: float):
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature
+        }
+        
+        response = requests.post(
+            f"{self.base_url}/chat/completions",
+            headers=headers,
+            json=payload
+        )
+        
+        return response.json()
+```
+
+## 2. إضافة ملفات الواجهة المفقودة
+
+### إنشاء مجلد `templates` وملف `home.html` بداخله:
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{app_name}}</title>
+    <style>
+        body {
+            font-family: 'Tahoma', Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .chat-header {
+            background: #4a6fa5;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        .chat-messages {
+            height: 500px;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 70%;
+        }
+        .user-message {
+            background: #e3f2fd;
+            margin-left: auto;
+            margin-right: 10px;
+        }
+        .assistant-message {
+            background: #f1f1f1;
+            margin-right: auto;
+            margin-left: 10px;
+        }
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #ddd;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+        .chat-input button {
+            background: #4a6fa5;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>{{app_name}}</h1>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- الرسائل تظهر هنا -->
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="اكتب رسالتك هنا...">
+            <button onclick="sendMessage()">إرسال</button>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            
+            if (message) {
+                // عرض رسالة المستخدم
+                displayMessage('user', message);
+                input.value = '';
+                
+                // إرسال الرسالة للسيرفر
+                const response = await fetch('/api/conversation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message })
+                });
+                
+                const data = await response.json();
+                displayMessage('assistant', data.response);
+            }
+        }
+        
+        function displayMessage(role, content) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(role + '-message');
+            messageDiv.textContent = content;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
+```
+
+### إنشاء مجلد `static` للملفات الثابتة (يمكنك إضافة CSS/JS لاحقاً إذا احتجت)
+
+```bash
+mkdir static
+```
+
+## 3. التعامل مع شهادات SSL
+
+للتشغيل بدون SSL (للتطوير المحلي):
+
+```python
+# نعدل سطر التشغيل الأخير ليصبح:
+uvorn.run(app, host="0.0.0.0", port=8000)
+```
+
+للتشغيل بSSL في Production:
+
+1. إنشاء شهادات ذاتية التوقيع للتطوير:
+
+```bash
+openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365
+```
+
+2. أو الحصول على شهادات حقيقية من Let's Encrypt
+
+## 4. التعديل النهائي على السكريبت
+
+نقوم بإضافة هذه التغييرات:
+
+1. استبدال مكتبة DeepSeek بالتنفيذ باستخدام requests
+2. إضافة التحقق من وجود المجلدات المطلوبة:
+
+```python
+# نضيف في بداية السكريبت بعد imports:
+Path("templates").mkdir(exist_ok=True)
+Path("static").mkdir(exist_ok=True)
+```
+
+3. تعديل نقطة نهاية المحادثة لتعمل بشكل صحيح:
+
+```python
+@app.post("/api/conversation")
+async def handle_conversation(request: Request):
+    data = await request.json()
+    message = data.get("message", "")
+    
+    # بدء محادثة جديدة
+    conv_id = str(datetime.now().timestamp())
+    
+    # حفظ رسالة المستخدم
+    db.save_message(conv_id, "user", message)
+    
+    # الحصول على التاريخ
+    history = db.get_conversation_history(conv_id)
+    
+    # توليد الرد
+    ai_response = await ai.generate_response(history)
+    
+    # حفظ رد سروح
+    db.save_message(conv_id, "assistant", ai_response)
+    
+    return {"response": ai_response}
+```
+
+## كيفية التشغيل الآن:
+
+1. احفظ التعديلات في الملفات
+2. شغل السيرفر:
+
+```bash
+python srooh.py
+```
+
+3. افتح المتصفح على:
+
+```
+http://localhost:8000
+```
+
+هذه التعديلات تجعل السكريبت يعمل بكامل وظائفه دون الحاجة لمكتبات خارجية غير موجودة، وتوفر واجهة مستخدم أساسية جاهزة للاستخدام.

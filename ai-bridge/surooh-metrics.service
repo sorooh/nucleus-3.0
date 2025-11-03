@@ -1,0 +1,18 @@
+[Unit]
+Description=Surooh AI Bridge Metrics Exporter
+After=network.target
+Wants=surooh-ai-bridge.service
+
+[Service]
+Type=simple
+User=runner
+WorkingDirectory=/home/runner/NucleusOS/ai-bridge
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/usr/bin/python3 /home/runner/NucleusOS/ai-bridge/bridge_metrics.py --port 7011
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

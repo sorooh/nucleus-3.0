@@ -1,0 +1,74 @@
+version: '3.9'
+
+services:
+  # Emperor Nicholas Core (Phase Ω)
+  nucleus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nucleus:3.0.0
+    container_name: nucleus-core
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - PORT_API=8080
+      - DATABASE_URL=${DATABASE_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - SILICONFLOW_API_KEY=${SILICONFLOW_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+      - UPSTASH_REDIS_REST_URL=${UPSTASH_REDIS_REST_URL}
+      - UPSTASH_REDIS_REST_TOKEN=${UPSTASH_REDIS_REST_TOKEN}
+      - UPSTASH_VECTOR_REST_URL=${UPSTASH_VECTOR_REST_URL}
+      - UPSTASH_VECTOR_REST_TOKEN=${UPSTASH_VECTOR_REST_TOKEN}
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - QUANTUM_ENABLED=${QUANTUM_ENABLED:-true}
+      - GOVERNANCE_ENFORCE=${GOVERNANCE_ENFORCE:-true}
+      - EVOLUTION_ENABLED=${EVOLUTION_ENABLED:-true}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/ugw/monitoring/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - nucleus-network
+
+  # Empire Runner (Phase 11.5) - Development Orchestrator
+  # NOTE: Empire Runner is designed for local development
+  # In production, use 'nucleus' service directly
+  # Uncomment below to enable empire-runner in Docker (requires dev setup)
+  # empire-runner:
+  #   build:
+  #     context: ./apps/empire-runner
+  #     dockerfile: Dockerfile
+  #   container_name: emperor-nicholas-runner
+  #   restart: unless-stopped
+  #   environment:
+  #     - NODE_ENV=development
+  #     - ENV_PATH=/app/env/.env.local
+  #     - DATABASE_URL=${DATABASE_URL}
+  #     - PORT=5000
+  #     - PORT_API=8080
+  #     - QUANTUM_ENABLED=${QUANTUM_ENABLED:-true}
+  #     - GOVERNANCE_ENFORCE=${GOVERNANCE_ENFORCE:-true}
+  #     - EVOLUTION_ENABLED=${EVOLUTION_ENABLED:-true}
+  #   volumes:
+  #     - ./env:/app/env:ro
+  #   depends_on:
+  #     nucleus:
+  #       condition: service_healthy
+  #   networks:
+  #     - nucleus-network
+  #   command: ["node", "dist/index.js"]
+
+networks:
+  nucleus-network:
+    driver: bridge

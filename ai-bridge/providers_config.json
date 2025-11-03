@@ -1,0 +1,71 @@
+{
+  "distributor": {
+    "enabled": true,
+    "broadcast_url": "http://localhost:5000/api/distributor/broadcast",
+    "hmac_secret_env": "CENTRAL_HMAC_SECRET",
+    "jwt_env": "JWT_SECRET"
+  },
+  "default_mode": "adaptive",
+  "thresholds": {
+    "low_confidence": 0.62,
+    "committee_trigger": 0.58,
+    "sensitive_tasks": [
+      "pricing.update",
+      "payout.execute",
+      "invoice.post",
+      "ce.compliance",
+      "tax.rule",
+      "financial",
+      "payment",
+      "security"
+    ]
+  },
+  "providers": {
+    "llama": {
+      "type": "openai-compatible",
+      "base_url": "https://api.groq.com/openai/v1",
+      "api_key_env": "GROQ_API_KEY",
+      "model": "llama-3.3-70b-versatile",
+      "capabilities": [
+        "analysis",
+        "reasoning",
+        "structured"
+      ]
+    },
+    "mistral": {
+      "type": "openai-compatible",
+      "base_url": "https://api.mistral.ai/v1",
+      "api_key_env": "MISTRAL_API_KEY",
+      "model": "mistral-large-latest",
+      "capabilities": [
+        "chat",
+        "natural",
+        "fast",
+        "multilingual"
+      ]
+    },
+    "openai": {
+      "type": "openai-compatible",
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "model": "gpt-4o",
+      "capabilities": [
+        "general",
+        "coding",
+        "vision"
+      ]
+    },
+    "claude": {
+      "type": "anthropic",
+      "base_url": "https://api.anthropic.com/v1",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "model": "claude-3-5-sonnet-20241022",
+      "capabilities": [
+        "planning",
+        "foresight",
+        "long-context",
+        "analysis"
+      ]
+    }
+  }
+}

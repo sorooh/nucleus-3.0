@@ -1,0 +1,627 @@
+# خطة تنفيذ نظام سُروح - العقل المركزي
+
+سأقوم بتنفيذ النظام وفقًا للمتطلبات المذكورة بأفضل جودة ونظافة في الكود. إليك الهيكل الأساسي والكود الأولي للنظام:
+
+## 1. إعداد البنية التحتية الأساسية
+
+### هيكل الملفات
+```
+surooh_core/
+│
+├── .env
+├── .gitignore
+├── requirements.txt
+├── server.py
+├── brain.py
+├── memory/
+│   ├── memory.db
+│   └── vector_store/
+├── utils/
+│   ├── file_processor.py
+│   └── helpers.py
+└── tests/
+    ├── test_brain.py
+    └── test_file_processor.py
+```
+
+### الكود الأساسي
+
+`brain.py`:
+```python
+import os
+import sqlite3
+from typing import Dict, Any, List, Optional
+from dotenv import load_dotenv
+import openai
+import faiss
+import numpy as np
+import pickle
+
+load_dotenv()
+
+class SuroohBrain:
+    def __init__(self):
+        # إعداد اتصال OpenAI
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        openai.api_key = self.openai_api_key
+        
+        # إعداد قاعدة البيانات
+        self.db_connection = sqlite3.connect('memory/memory.db')
+        self._init_db()
+        
+        # إعداد نظام التخزين المتجهي
+        self.vector_dim = 1536  # أبعاد تضمين OpenAI
+        self.vector_index = faiss.IndexFlatL2(self.vector_dim)
+        self.vector_store_file = 'memory/vector_store/vector_index.faiss'
+        self._load_vector_store()
+        
+        # إعدادات النظام
+        self.max_context_length = 4000  # الحد الأقصى لسياق المحادثة
+
+    def _init_db(self):
+        """تهيئة جداول قاعدة البيانات"""
+        cursor = self.db_connection.cursor()
+        
+        # جدول المحادثات
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS conversations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            summary TEXT,
+            category TEXT,
+            tone TEXT
+        )
+        ''')
+        
+        # جدول الرسائل
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            embedding BLOB
+        )
+        ''')
+        
+        # جدول الملفات
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            file_name TEXT NOT NULL,
+            file_type TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            content TEXT,
+            summary TEXT,
+            category TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+        ''')
+        
+        self.db_connection.commit()
+
+    def _load_vector_store(self):
+        """تحميل مخزن المتجهات إذا كان موجودًا"""
+        if os.path.exists(self.vector_store_file):
+            self.vector_index = faiss.read_index(self.vector_store_file)
+
+    def _save_vector_store(self):
+        """حفظ مخزن المتجهات"""
+        faiss.write_index(self.vector_index, self.vector_store_file)
+
+    def _get_embedding(self, text: str) -> List[float]:
+        """الحصول على تمثيل متجهي للنص"""
+        response = openai.Embedding.create(
+            input=[text],
+            model="text-embedding-ada-002"
+        )
+        return response['data'][0]['embedding']
+
+    def _send_to_gpt(self, messages: List[Dict[str, str]], model: str = "gpt-4") -> Dict[str, Any]:
+        """إرسال الرسائل إلى GPT والحصول على الرد"""
+        try:
+            response = openai.ChatCompletion.create(
+                model=model,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1500
+            )
+            return response.choices[0].message
+        except Exception as e:
+            raise Exception(f"Error in GPT communication: {str(e)}")
+
+    def process_message(self, conversation_id: str, message: str, role: str = "user") -> Dict[str, Any]:
+        """معالجة رسالة جديدة وإرجاع الرد"""
+        # حفظ الرسالة الواردة
+        self._store_message(conversation_id, role, message)
+        
+        # استرجاع سياق المحادثة
+        context = self._get_conversation_context(conversation_id)
+        
+        # إرسال إلى GPT
+        gpt_response = self._send_to_gpt(context)
+        
+        # حفظ رد GPT
+        self._store_message(conversation_id, "assistant", gpt_response['content'])
+        
+        # تحليل النبرة وتصنيف المحادثة (خلفيًا)
+        self._analyze_conversation(conversation_id)
+        
+        return {
+            "response": gpt_response['content'],
+            "conversation_id": conversation_id,
+            "context_length": len(context)
+        }
+
+    def _store_message(self, conversation_id: str, role: str, content: str):
+        """تخزين الرسالة في قاعدة البيانات"""
+        cursor = self.db_connection.cursor()
+        
+        # الحصول على التضمين المتجهي للنص
+        embedding = self._get_embedding(content)
+        embedding_bytes = pickle.dumps(embedding)
+        
+        cursor.execute('''
+        INSERT INTO messages (conversation_id, role, content, embedding)
+        VALUES (?, ?, ?, ?)
+        ''', (conversation_id, role, content, embedding_bytes))
+        
+        self.db_connection.commit()
+        
+        # تحديث فهرس المتجهات
+        self._update_vector_index(conversation_id, content, embedding)
+
+    def _update_vector_index(self, conversation_id: str, content: str, embedding: List[float]):
+        """تحديث فهرس البحث المتجهي"""
+        # تحويل التضمين إلى مصفوفة numpy
+        vector = np.array([embedding], dtype='float32')
+        
+        # إضافة إلى الفهرس
+        self.vector_index.add(vector)
+        
+        # حفظ الفهرس
+        self._save_vector_store()
+
+    def _get_conversation_context(self, conversation_id: str, max_tokens: int = 3000) -> List[Dict[str, str]]:
+        """استرجاع سياق المحادثة مع مراعاة الحد الأقصى للرموز"""
+        cursor = self.db_connection.cursor()
+        
+        cursor.execute('''
+        SELECT role, content FROM messages 
+        WHERE conversation_id = ?
+        ORDER BY timestamp ASC
+        ''', (conversation_id,))
+        
+        messages = []
+        total_tokens = 0
+        
+        for role, content in cursor.fetchall():
+            # تقدير عدد الرموز (تقريبي)
+            message_tokens = len(content.split()) * 1.33
+            
+            if total_tokens + message_tokens > max_tokens:
+                break
+                
+            messages.append({"role": role, "content": content})
+            total_tokens += message_tokens
+        
+        return messages
+
+    def _analyze_conversation(self, conversation_id: str):
+        """تحليل المحادثة لتحديد الفئة والنبرة"""
+        context = self._get_conversation_context(conversation_id, max_tokens=2000)
+        
+        # تحليل النبرة
+        tone_prompt = {
+            "role": "system",
+            "content": "Analyze the tone of this conversation. Possible tones: angry, happy, neutral, frustrated, satisfied, curious. Respond with only one word."
+        }
+        
+        # تحليل الفئة
+        category_prompt = {
+            "role": "system",
+            "content": "Categorize this conversation. Possible categories: sales, support, technical, billing, feedback, other. Respond with only one word."
+        }
+        
+        # تلخيص المحادثة
+        summary_prompt = {
+            "role": "system",
+            "content": "Summarize this conversation in 2-3 sentences. Respond with only the summary."
+        }
+        
+        # إرسال الطلبات (يمكن تحسينها لتصبح متوازية)
+        tone = self._send_to_gpt([tone_prompt] + context)
+        category = self._send_to_gpt([category_prompt] + context)
+        summary = self._send_to_gpt([summary_prompt] + context)
+        
+        # تحديث جدول المحادثات
+        cursor = self.db_connection.cursor()
+        cursor.execute('''
+        INSERT OR REPLACE INTO conversations (conversation_id, summary, category, tone)
+        VALUES (?, ?, ?, ?)
+        ''', (conversation_id, summary['content'], category['content'], tone['content']))
+        
+        self.db_connection.commit()
+
+    def search_memory(self, query: str, k: int = 3) -> List[Dict[str, Any]]:
+        """البحث في الذاكرة باستخدام البحث الدلالي"""
+        # الحصول على تضمين الاستعلام
+        query_embedding = self._get_embedding(query)
+        query_vector = np.array([query_embedding], dtype='float32')
+        
+        # البحث في الفهرس
+        distances, indices = self.vector_index.search(query_vector, k)
+        
+        # استرجاع النتائج من قاعدة البيانات
+        cursor = self.db_connection.cursor()
+        results = []
+        
+        for idx in indices[0]:
+            cursor.execute('SELECT conversation_id, content FROM messages WHERE id = ?', (int(idx)+1,))
+            row = cursor.fetchone()
+            if row:
+                results.append({
+                    "conversation_id": row[0],
+                    "content": row[1],
+                    "distance": distances[0][idx]
+                })
+        
+        return results
+
+    def process_file(self, file_path: str, file_type: str):
+        """معالجة وتحليل الملفات"""
+        # سيتم تنفيذ هذا في وحدة منفصلة
+        pass
+
+    def generate_decision_options(self, context: List[Dict[str, str]]) -> Dict[str, Any]:
+        """توليد خيارات قرار بناءً على السياق"""
+        decision_prompt = {
+            "role": "system",
+            "content": """
+            Based on the conversation, generate 3 possible decision options for how to proceed.
+            Format your response as:
+            Option 1: [description]
+            Option 2: [description]
+            Option 3: [description]
+            Recommended Option: [1/2/3]
+            """
+        }
+        
+        response = self._send_to_gpt([decision_prompt] + context)
+        return self._parse_decision_response(response['content'])
+
+    def _parse_decision_response(self, response_text: str) -> Dict[str, Any]:
+        """تحليل رد خيارات القرار"""
+        lines = [line.strip() for line in response_text.split('\n') if line.strip()]
+        options = {}
+        recommended = None
+        
+        for line in lines:
+            if line.startswith('Option 1:'):
+                options['option1'] = line.replace('Option 1:', '').strip()
+            elif line.startswith('Option 2:'):
+                options['option2'] = line.replace('Option 2:', '').strip()
+            elif line.startswith('Option 3:'):
+                options['option3'] = line.replace('Option 3:', '').strip()
+            elif 'Recommended Option:' in line:
+                recommended = line.split(':')[1].strip()
+        
+        return {
+            "options": options,
+            "recommended": recommended
+        }
+```
+
+`server.py`:
+```python
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from brain import SuroohBrain
+import os
+from typing import Optional
+from pydantic import BaseModel
+
+app = FastAPI(title="Surooh AI Core", version="0.1.0")
+
+# إعداد CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# تهيئة العقل المركزي
+brain = SuroohBrain()
+
+# نماذج البيانات
+class Message(BaseModel):
+    conversation_id: str
+    message: str
+    role: Optional[str] = "user"
+
+class Conversation(BaseModel):
+    conversation_id: str
+    summary: Optional[str]
+    category: Optional[str]
+    tone: Optional[str]
+
+class SearchQuery(BaseModel):
+    query: str
+    k: Optional[int] = 3
+
+# نقاط النهاية
+@app.post("/message")
+async def process_message(msg: Message):
+    try:
+        response = brain.process_message(msg.conversation_id, msg.message, msg.role)
+        return {"success": True, "data": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/conversation/{conversation_id}")
+async def get_conversation(conversation_id: str):
+    try:
+        cursor = brain.db_connection.cursor()
+        cursor.execute('''
+        SELECT role, content, timestamp FROM messages 
+        WHERE conversation_id = ?
+        ORDER BY timestamp ASC
+        ''', (conversation_id,))
+        
+        messages = [{"role": row[0], "content": row[1], "timestamp": row[2]} 
+                  for row in cursor.fetchall()]
+        
+        cursor.execute('''
+        SELECT summary, category, tone FROM conversations
+        WHERE conversation_id = ?
+        ''', (conversation_id,))
+        
+        conv_data = cursor.fetchone()
+        conversation = {
+            "conversation_id": conversation_id,
+            "messages": messages
+        }
+        
+        if conv_data:
+            conversation.update({
+                "summary": conv_data[0],
+                "category": conv_data[1],
+                "tone": conv_data[2]
+            })
+        
+        return {"success": True, "data": conversation}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/search")
+async def search_memory(query: SearchQuery):
+    try:
+        results = brain.search_memory(query.query, query.k)
+        return {"success": True, "data": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        # حفظ الملف مؤقتًا
+        file_path = f"memory/uploads/{file.filename}"
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        with open(file_path, "wb") as buffer:
+            buffer.write(file.file.read())
+        
+        # معالجة الملف (سيتم تنفيذ هذا في وحدة منفصلة)
+        # file_type = file.content_type
+        # result = brain.process_file(file_path, file_type)
+        
+        return {"success": True, "filename": file.filename, "message": "File uploaded successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/decisions/{conversation_id}")
+async def get_decision_options(conversation_id: str):
+    try:
+        context = brain._get_conversation_context(conversation_id)
+        decisions = brain.generate_decision_options(context)
+        return {"success": True, "data": decisions}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+## 2. ملفات التهيئة
+
+`.env`:
+```
+OPENAI_API_KEY=your_api_key_here
+```
+
+`requirements.txt`:
+```
+fastapi
+uvicorn
+openai
+python-dotenv
+sqlite3
+faiss-cpu
+numpy
+pytesseract
+PyMuPDF
+python-docx
+pydantic
+pickle
+```
+
+## 3. وحدة معالجة الملفات
+
+`utils/file_processor.py`:
+```python
+import os
+import pytesseract
+from PIL import Image
+import fitz  # PyMuPDF
+from docx import Document
+from typing import Union
+from brain import SuroohBrain
+
+class FileProcessor:
+    def __init__(self, brain: SuroohBrain):
+        self.brain = brain
+    
+    def process_file(self, file_path: str) -> dict:
+        """توجيه الملف إلى المعالج المناسب بناءً على نوعه"""
+        file_ext = os.path.splitext(file_path)[1].lower()
+        
+        if file_ext in ['.jpg', '.jpeg', '.png']:
+            return self._process_image(file_path)
+        elif file_ext == '.pdf':
+            return self._process_pdf(file_path)
+        elif file_ext == '.docx':
+            return self._process_docx(file_path)
+        elif file_ext == '.txt':
+            return self._process_text(file_path)
+        else:
+            raise ValueError(f"Unsupported file type: {file_ext}")
+    
+    def _process_image(self, file_path: str) -> dict:
+        """معالجة ملفات الصور باستخدام OCR"""
+        try:
+            text = pytesseract.image_to_string(Image.open(file_path))
+            summary = self._generate_summary(text)
+            category = self._categorize_content(text)
+            
+            return {
+                "content": text,
+                "summary": summary,
+                "category": category,
+                "type": "image"
+            }
+        except Exception as e:
+            raise Exception(f"Image processing error: {str(e)}")
+    
+    def _process_pdf(self, file_path: str) -> dict:
+        """معالجة ملفات PDF"""
+        try:
+            text = ""
+            with fitz.open(file_path) as doc:
+                for page in doc:
+                    text += page.get_text()
+            
+            summary = self._generate_summary(text)
+            category = self._categorize_content(text)
+            
+            return {
+                "content": text,
+                "summary": summary,
+                "category": category,
+                "type": "pdf"
+            }
+        except Exception as e:
+            raise Exception(f"PDF processing error: {str(e)}")
+    
+    def _process_docx(self, file_path: str) -> dict:
+        """معالجة ملفات Word"""
+        try:
+            doc = Document(file_path)
+            text = "\n".join([para.text for para in doc.paragraphs])
+            
+            summary = self._generate_summary(text)
+            category = self._categorize_content(text)
+            
+            return {
+                "content": text,
+                "summary": summary,
+                "category": category,
+                "type": "docx"
+            }
+        except Exception as e:
+            raise Exception(f"DOCX processing error: {str(e)}")
+    
+    def _process_text(self, file_path: str) -> dict:
+        """معالجة ملفات النصوص البسيطة"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                text = f.read()
+            
+            summary = self._generate_summary(text)
+            category = self._categorize_content(text)
+            
+            return {
+                "content": text,
+                "summary": summary,
+                "category": category,
+                "type": "text"
+            }
+        except Exception as e:
+            raise Exception(f"Text file processing error: {str(e)}")
+    
+    def _generate_summary(self, text: str) -> str:
+        """توليد ملخص للمحتوى باستخدام GPT"""
+        if len(text.split()) < 50:  # إذا كان النص قصيرًا، لا داعي للتلخيص
+            return text[:500]  # إرجاع أول 500 حرف كحد أقصى
+        
+        try:
+            response = self.brain._send_to_gpt([
+                {"role": "system", "content": "Summarize the following content in 3-5 bullet points in Arabic."},
+                {"role": "user", "content": text[:10000]}  # إرسال أول 10k كلمة لتجنب تجاوز الحد
+            ])
+            return response['content']
+        except Exception as e:
+            return f"Summary generation failed: {str(e)}"
+    
+    def _categorize_content(self, text: str) -> str:
+        """تصنيف المحتوى باستخدام GPT"""
+        if not text.strip():
+            return "uncategorized"
+        
+        try:
+            response = self.brain._send_to_gpt([
+                {"role": "system", "content": "Categorize this content. Possible categories: legal, technical, financial, report, contract, correspondence, other. Respond with only one word in English."},
+                {"role": "user", "content": text[:5000]}  # إرسال أول 5k كلمة
+            ])
+            return response['content'].strip().lower()
+        except Exception as e:
+            return "uncategorized"
+```
+
+## 4. تعليمات التشغيل
+
+1. قم بتثبيت المتطلبات:
+```bash
+pip install -r requirements.txt
+```
+
+2. قم بإعداد ملف `.env` بإضافة مفتاح OpenAI API الخاص بك.
+
+3. قم بتشغيل الخادم:
+```bash
+python server.py
+```
+
+4. يمكنك الوصول إلى واجهة API عبر `http://localhost:8000`
+
+## 5. ميزات إضافية مطبقة
+
+1. **نظام الذاكرة والسياق**: يحفظ المحادثات كاملة ويستعيد السياق عند الحاجة.
+2. **البحث الدلالي**: يمكن البحث في الذاكرة باستخدام تقنيات التضمين المتجهي.
+3. **تحليل النبرة والتصنيف**: يحلل كل محادثة لتحديد النبرة والفئة تلقائيًا.
+4. **نظام اتخاذ القرار**: يقدم ثلاثة خيارات مع توصية لأفضلها.
+5. **معالجة الملفات**: يدعم معالجة الصور، PDF، مستندات Word، والنصوص.
+
+## 6. خطوات التطوير المستقبلية
+
+1. إضافة واجهة مستخدم ويب تفاعلية
+2. دعم المزيد من أنواع الملفات (Excel, PowerPoint, etc.)
+3. تحسين أداء نظام التخزين المتجهي
+4. إضافة نظام للتعلم الآلي لتحسين الردود مع الوقت
+5. دعم التكامل مع منصات التواصل مثل Slack وWhatsApp
+
+هذا النظام يوفر بنية قوية وقابلة للتوسعة لبناء مساعد ذكي متكامل يمكنه التعامل مع مجموعة واسعة من المهام بذكاء وكفاءة.

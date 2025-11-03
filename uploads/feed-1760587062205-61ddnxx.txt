@@ -1,0 +1,6 @@
+✅ تم تنفيذ الملف:
+
+File "/srv/surooh-ai/data/code/متطور2.txt.clean.py", line 332
+    :done, 2024-7-1, 7d
+                     ^
+SyntaxError: invalid decimal literal

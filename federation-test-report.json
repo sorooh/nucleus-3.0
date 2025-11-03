@@ -1,0 +1,26 @@
+{
+  "startTime": "2025-10-26T21:37:02.839Z",
+  "tests": [
+    {
+      "name": "Registration",
+      "passed": true,
+      "details": {
+        "success": true,
+        "message": "Node already registered",
+        "traceId": "already-registered"
+      }
+    },
+    {
+      "name": "Activation",
+      "passed": false,
+      "error": "Request failed with status code 403"
+    }
+  ],
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0
+  },
+  "error": "Request failed with status code 403",
+  "endTime": "2025-10-26T21:37:03.232Z"
+}

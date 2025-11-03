@@ -1,0 +1,32 @@
+Nucleus 2.0 - Surooh Empire Knowledge Base
+
+This is a test document for the Knowledge Feed system. The system is designed to process uploaded files, extract text, chunk them into manageable pieces, and store them in a Vector Database for semantic search.
+
+Key Features of Nucleus 2.0:
+1. Intelligent Core Brain with decision-making capabilities
+2. Meta-Governance Layer for coordinating child brains
+3. System Pulse Monitor for health tracking
+4. Evolving Memory Hub for historical learning
+5. Knowledge Feed system for ingesting external knowledge
+
+The Knowledge Feed system supports multiple file formats:
+- Plain text files (.txt)
+- Markdown files (.md)
+- PDF documents (.pdf)
+- Microsoft Word documents (.docx)
+
+Each file is processed through the following steps:
+1. Upload and validation (max 20MB)
+2. Text extraction based on file type
+3. Content hash generation for duplicate detection
+4. Text chunking (800-1000 words per chunk)
+5. Vector embedding and storage in Upstash Vector DB
+6. Integration with Meta Layers (Memory, Governance, Pulse)
+
+The system maintains a complete audit trail of all knowledge ingestion operations, including:
+- File metadata (name, size, type, uploader)
+- Processing status (queued, processing, completed, error)
+- Chunk count and summary
+- Processing time and timestamps
+
+This enables Surooh Empire to build a comprehensive knowledge base that can be queried semantically, supports decision-making, and evolves over time through continuous learning.

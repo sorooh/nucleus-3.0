@@ -1,0 +1,76 @@
+{
+  "info": {
+    "name": "Surooh Wallet ↔ Central Core",
+    "_postman_id": "2d7ab0cc-aaaa-bbbb-cccc-abcdefabcdef",
+    "description": "Postman collection to test the bidirectional link between Wallet Core and Central Memory Core.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "WALLET_BASE_URL",
+      "value": "https://wallet.sorooh.ai"
+    },
+    {
+      "key": "CENTRAL_BASE_URL",
+      "value": "https://central.sorooh.ai"
+    },
+    {
+      "key": "JWT_BEARER",
+      "value": "REPLACE_WITH_JWT"
+    },
+    {
+      "key": "X_SUROOH_SIGNATURE",
+      "value": "REPLACE_WITH_HMAC"
+    }
+  ],
+  "item": [
+    {
+      "name": "Wallet → Central: export transactions",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{JWT_BEARER}}"
+          },
+          {
+            "key": "X-Surooh-Signature",
+            "value": "{{X_SUROOH_SIGNATURE}}"
+          }
+        ],
+        "url": "{{CENTRAL_BASE_URL}}/central/memory/wallet/export",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"source\": \"WALLET_CORE\",\n  \"direction\": \"OUTBOUND\",\n  \"timestamp\": \"2025-10-11T00:00:00Z\",\n  \"dataType\": \"TRANSACTION_BATCH\",\n  \"payload\": {\n    \"transactions\": [{\n      \"id\": \"TX-98271\",\n      \"userId\": \"USR-554\",\n      \"amount\": 35.5,\n      \"currency\": \"EUR\",\n      \"type\": \"PURCHASE\",\n      \"tier\": \"Silver\",\n      \"pointsEarned\": 355\n    }]\n  }\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Central → Wallet: sync insights",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Surooh-Signature",
+            "value": "{{X_SUROOH_SIGNATURE}}"
+          }
+        ],
+        "url": "{{WALLET_BASE_URL}}/wallet/core/sync",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"source\": \"CENTRAL_MEMORY_CORE\",\n  \"direction\": \"INBOUND\",\n  \"timestamp\": \"2025-10-11T00:15:00Z\",\n  \"dataType\": \"INSIGHT_REPORT\",\n  \"payload\": {\n    \"recommendation\": \"Offer +10% bonus points to Silver tier in NL region.\",\n    \"predictedGrowth\": 0.12,\n    \"confidence\": 0.89,\n    \"modelVersion\": \"WalletAI_2025_10\"\n  }\n}"
+        }
+      },
+      "response": []
+    }
+  ]
+}

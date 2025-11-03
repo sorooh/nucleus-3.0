@@ -1,0 +1,239 @@
+openapi: 3.0.3
+info:
+  title: Surooh Wallet ↔ Central Memory Core Integration API
+  version: "1.0.0"
+  description: |
+    Official API spec to link **Surooh Digital Wallet (Wallet Core)** with **Surooh Central Memory Core**.
+    - Transport: HTTPS only
+    - Auth: JWT (Bearer) + HMAC-SHA256 signature header
+    - Header: `X-Surooh-Signature` = HMAC_SHA256(secret, raw_body)
+servers:
+  - url: https://wallet.sorooh.ai
+    description: Wallet Core server
+  - url: https://central.sorooh.ai
+    description: Central Memory Core server
+
+tags:
+  - name: Wallet
+    description: Endpoints exposed by the Wallet Core
+  - name: CentralCore
+    description: Endpoints exposed by the Central Memory Core
+
+components:
+  securitySchemes:
+    bearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  headers:
+    X-Surooh-Signature:
+      description: HMAC-SHA256 signature of the **raw** request body using the shared secret between peers.
+      schema:
+        type: string
+        example: 8ffb12a4ccf98b2e0b...
+
+  schemas:
+    Envelope:
+      type: object
+      required: [source, direction, timestamp, dataType, payload]
+      properties:
+        source:
+          type: string
+          description: WALLET_CORE or CENTRAL_MEMORY_CORE
+          example: WALLET_CORE
+        direction:
+          type: string
+          enum: [OUTBOUND, INBOUND]
+          example: OUTBOUND
+        timestamp:
+          type: string
+          format: date-time
+          example: 2025-10-11T00:00:00Z
+        dataType:
+          type: string
+          description: Business message type (TRANSACTION_BATCH, INSIGHT_REPORT, MODEL_UPDATE, etc.)
+          example: TRANSACTION_BATCH
+        payload:
+          type: object
+          additionalProperties: true
+          description: Message payload; schema varies by dataType
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Optional metadata (schemaVersion, checksum, etc.)
+
+    TransactionBatchPayload:
+      type: object
+      required: [transactions]
+      properties:
+        transactions:
+          type: array
+          items:
+            type: object
+            required: [id, userId, amount, currency, type]
+            properties:
+              id:
+                type: string
+                example: TX-98271
+              userId:
+                type: string
+                example: USR-554
+              amount:
+                type: number
+                format: float
+                example: 35.50
+              currency:
+                type: string
+                example: EUR
+              type:
+                type: string
+                enum: [PURCHASE, REFUND, BONUS, REDEEM, ADJUSTMENT]
+                example: PURCHASE
+              tier:
+                type: string
+                example: Silver
+              pointsEarned:
+                type: integer
+                example: 355
+              partnerId:
+                type: string
+                example: PART-77
+              metadata:
+                type: object
+                additionalProperties: true
+
+    InsightReportPayload:
+      type: object
+      required: [recommendation]
+      properties:
+        recommendation:
+          type: string
+          example: Offer +10% bonus points to Silver tier in NL region.
+        predictedGrowth:
+          type: number
+          format: float
+          example: 0.12
+        confidence:
+          type: number
+          format: float
+          example: 0.89
+        modelVersion:
+          type: string
+          example: WalletAI_2025_10
+
+paths:
+  /wallet/export:
+    post:
+      tags: [Wallet]
+      summary: Export transaction batches Wallet → Central Core
+      description: Wallet pushes condensed transactions and loyalty events to the central core.
+      security:
+        - bearerJWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Envelope'
+            examples:
+              txBatch:
+                summary: Transaction batch
+                value:
+                  source: WALLET_CORE
+                  direction: OUTBOUND
+                  timestamp: 2025-10-11T00:00:00Z
+                  dataType: TRANSACTION_BATCH
+                  payload:
+                    transactions:
+                      - id: TX-98271
+                        userId: USR-554
+                        amount: 35.5
+                        currency: EUR
+                        type: PURCHASE
+                        tier: Silver
+                        pointsEarned: 355
+      responses:
+        '200':
+          description: Accepted by Wallet for forwarding
+        '401':
+          description: Unauthorized (missing/invalid JWT)
+
+  /wallet/core/sync:
+    post:
+      tags: [Wallet]
+      summary: Central Core → Wallet improvements (insights/model updates)
+      description: Central core posts insights or model updates back to Wallet.
+      parameters:
+        - in: header
+          name: X-Surooh-Signature
+          required: true
+          schema:
+            type: string
+          description: HMAC-SHA256 signature using WALLET_HMAC_SECRET
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Envelope'
+            examples:
+              insightReport:
+                summary: Insight report sample
+                value:
+                  source: CENTRAL_MEMORY_CORE
+                  direction: INBOUND
+                  timestamp: 2025-10-11T00:15:00Z
+                  dataType: INSIGHT_REPORT
+                  payload:
+                    recommendation: Offer +10% bonus points to Silver tier in NL region.
+                    predictedGrowth: 0.12
+                    confidence: 0.89
+                    modelVersion: WalletAI_2025_10
+      responses:
+        '200':
+          description: Processed by Wallet
+        '401':
+          description: Bad signature
+
+  /central/memory/wallet/export:
+    post:
+      tags: [CentralCore]
+      summary: Wallet → Central Core intake endpoint
+      description: Central core receives Wallet exports. Requires JWT and HMAC signature.
+      security:
+        - bearerJWT: []
+      parameters:
+        - in: header
+          name: X-Surooh-Signature
+          required: true
+          schema:
+            type: string
+          description: HMAC-SHA256 signature using CENTRAL_HMAC_SECRET
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Envelope'
+            examples:
+              txBatch:
+                summary: Transaction batch
+                value:
+                  source: WALLET_CORE
+                  direction: OUTBOUND
+                  timestamp: 2025-10-11T00:00:00Z
+                  dataType: TRANSACTION_BATCH
+                  payload:
+                    transactions:
+                      - id: TX-98271
+                        userId: USR-554
+                        amount: 35.5
+                        currency: EUR
+                        type: PURCHASE
+                        tier: Silver
+                        pointsEarned: 355
+      responses:
+        '200':
+          description: Stored and processed by Central Core
+        '401':
+          description: Unauthorized/JWT invalid or bad signature

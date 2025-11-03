@@ -1,0 +1,6 @@
+chatgpt-like-ui/
+├── index.html          # الواجهة الرئيسية
+├── styles/
+│   └── style.css       # أنماط التصميم
+└── scripts/
+    └── chat.js         # منطق الدردشة

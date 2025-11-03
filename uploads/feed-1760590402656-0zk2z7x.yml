@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  surooh-core:
+    build: .
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./memory:/app/memory
+    environment:
+      - MODE=production
+    depends_on:
+      - redis
+      - faiss
+
+  surooh-web:
+    build: ./app
+    ports:
+      - '3000:3000'
+    environment:
+      - API_URL=http://surooh-core:8000
+    depends_on:
+      - surooh-core
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
+  pg_data:

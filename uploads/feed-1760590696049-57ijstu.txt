@@ -1,0 +1,4 @@
+chatgpt-like-ui/
+└── assets/
+    ├── logo.png
+    └── favicon.ico

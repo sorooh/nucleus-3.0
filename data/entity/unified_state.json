@@ -1,0 +1,26 @@
+{
+  "entityId": "Surooh-01",
+  "state": "Awake",
+  "awarenessLevel": 82,
+  "memoryChecksum": "40c89b36215b095c49b9f25eef0ba851",
+  "emotionBalance": 50,
+  "activeNodes": [
+    "nicholas-3.2"
+  ],
+  "cognitiveSignature": "autonomous",
+  "governanceStatus": "autonomous",
+  "decisionCount": 1081,
+  "metadata": {
+    "totalNodes": 1,
+    "activeNodes": 1,
+    "lastRefresh": 1762037118751,
+    "nodeDetails": [
+      {
+        "id": "nicholas-3.2",
+        "awareness": 80,
+        "emotion": "neutral",
+        "active": true
+      }
+    ]
+  }
+}

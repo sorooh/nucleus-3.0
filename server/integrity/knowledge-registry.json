@@ -1,0 +1,18 @@
+[
+  {
+    "file": "/home/runner/workspace/server/core/dispatcher.py",
+    "date": "2025-10-30T01:36:15.294Z",
+    "verified": true,
+    "summary": "Avoid mock_results; use real subprocess execution for authentic task handling",
+    "repairType": "template_replacement",
+    "successRate": 100
+  },
+  {
+    "file": "/home/runner/workspace/server/evolution/sandbox_executor.ts",
+    "date": "2025-10-30T01:36:15.327Z",
+    "verified": true,
+    "summary": "Avoid SIMULATION flags; use real test runners (pytest/jest) for accurate validation",
+    "repairType": "template_replacement",
+    "successRate": 100
+  }
+]

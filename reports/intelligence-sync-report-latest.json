@@ -1,0 +1,66 @@
+{
+  "fileName": "intelligence-sync-report-2025-10-26.json",
+  "generatedAt": "2025-10-26T23:52:42.696Z",
+  "reportPeriod": {
+    "from": "2025-10-19T23:52:42.696Z",
+    "to": "2025-10-26T23:52:42.696Z",
+    "days": 7
+  },
+  "summary": {
+    "totalIntelligence": 3,
+    "totalPatterns": 0,
+    "activeNodes": 2,
+    "broadcastSuccessRate": 0,
+    "avgProcessingTime": 183
+  },
+  "intelligenceBreakdown": {
+    "byType": {
+      "insight": 3
+    },
+    "byCategory": {
+      "code-quality": 3
+    },
+    "byPriority": {
+      "high": 3
+    },
+    "byNode": {
+      "side-node-main-test": 3
+    }
+  },
+  "patterns": {
+    "total": 0,
+    "byType": {},
+    "highConfidence": 0,
+    "avgConfidence": 0
+  },
+  "broadcasting": {
+    "totalBroadcasts": 6,
+    "successfulBroadcasts": 0,
+    "failedBroadcasts": 6,
+    "partialBroadcasts": 0,
+    "avgResponseTime": 183
+  },
+  "nodes": [
+    {
+      "nodeId": "side-test-1",
+      "nodeType": "development",
+      "health": 100,
+      "intelligenceContributed": 0,
+      "lastActivity": "2025-10-26T20:34:23.376Z"
+    },
+    {
+      "nodeId": "side-node-main-test",
+      "nodeType": "development",
+      "health": 100,
+      "intelligenceContributed": 3,
+      "lastActivity": "2025-10-26T22:26:55.466Z"
+    }
+  ],
+  "topPatterns": [],
+  "recommendations": [
+    "Low intelligence volume detected. Consider increasing data collection frequency from SIDE nodes.",
+    "No patterns detected. Ensure Pattern Miner is running and intelligence data is diverse enough.",
+    "Low broadcast success rate (0.0%). Check SIDE node connectivity and endpoint availability.",
+    "Limited intelligence categories detected. Expand data collection to cover more aspects of system operation."
+  ]
+}

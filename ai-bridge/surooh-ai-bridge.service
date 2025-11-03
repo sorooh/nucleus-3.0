@@ -1,0 +1,19 @@
+[Unit]
+Description=Surooh AI Provider Bridge (Adaptive Mode)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=runner
+WorkingDirectory=/home/runner/workspace/ai-bridge
+Environment="BRIDGE_MODE=adaptive"
+Environment="BRIDGE_PORT=7010"
+ExecStart=/usr/bin/python3 /home/runner/workspace/ai-bridge/bridge.py --mode adaptive --port 7010
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,76 @@
+{
+  "info": {
+    "name": "Surooh MailHub ↔ Central Core",
+    "_postman_id": "0f6adf0c-1111-2222-3333-abcdefabcdef",
+    "description": "Postman collection to test the bidirectional link between Mail Hub and Central Memory Core.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "MAILHUB_BASE_URL",
+      "value": "https://mailhub.sorooh.ai"
+    },
+    {
+      "key": "CENTRAL_BASE_URL",
+      "value": "https://central.sorooh.ai"
+    },
+    {
+      "key": "JWT_BEARER",
+      "value": "REPLACE_WITH_JWT"
+    },
+    {
+      "key": "X_SUROOH_SIGNATURE",
+      "value": "REPLACE_WITH_HMAC"
+    }
+  ],
+  "item": [
+    {
+      "name": "MailHub → Central: export summaries",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{JWT_BEARER}}"
+          },
+          {
+            "key": "X-Surooh-Signature",
+            "value": "{{X_SUROOH_SIGNATURE}}"
+          }
+        ],
+        "url": "{{CENTRAL_BASE_URL}}/central/memory/mailhub/export",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"source\": \"MAIL_HUB_CORE\",\n  \"direction\": \"OUTBOUND\",\n  \"timestamp\": \"2025-10-11T00:00:00Z\",\n  \"dataType\": \"EMAIL_SUMMARIES\",\n  \"payload\": {\n    \"summaries\": [{\n      \"messageId\": \"MH-1\",\n      \"sender\": \"client@supplier.com\",\n      \"subject\": \"New quotation for 10k\",\n      \"summary\": \"Supplier sent updated quotation for 10k units.\",\n      \"sentiment\": \"positive\"\n    }]\n  }\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Central → MailHub: sync feedback",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Surooh-Signature",
+            "value": "{{X_SUROOH_SIGNATURE}}"
+          }
+        ],
+        "url": "{{MAILHUB_BASE_URL}}/mailhub/core/sync",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"source\": \"CENTRAL_MEMORY_CORE\",\n  \"direction\": \"INBOUND\",\n  \"timestamp\": \"2025-10-11T00:01:00Z\",\n  \"dataType\": \"AI_FEEDBACK\",\n  \"payload\": {\n    \"recommendedReply\": \"Thank you for the quote. Please confirm lead time and shipping terms.\",\n    \"confidence\": 0.92,\n    \"modelVersion\": \"CentralModel_2025_10\"\n  }\n}"
+        }
+      },
+      "response": []
+    }
+  ]
+}

@@ -1,0 +1,286 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: surooh-intelligence
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-bridge-config
+  namespace: surooh-intelligence
+data:
+  providers_config.json: |
+    {
+      "distributor": {
+        "enabled": true,
+        "broadcast_url": "http://nucleus-service:5000/api/distributor/broadcast"
+      },
+      "default_mode": "adaptive",
+      "thresholds": {
+        "low_confidence": 0.62,
+        "committee_trigger": 0.58,
+        "sensitive_tasks": [
+          "pricing.update",
+          "payout.execute",
+          "invoice.post",
+          "tax.calculate",
+          "financial",
+          "payment"
+        ]
+      },
+      "providers": {
+        "llama": {
+          "type": "openai-compatible",
+          "base_url": "https://api.groq.com/openai/v1",
+          "model": "llama-3.3-70b-versatile",
+          "api_key_env": "GROQ_API_KEY"
+        },
+        "mistral": {
+          "type": "openai-compatible",
+          "base_url": "https://api.mistral.ai/v1",
+          "model": "mistral-large-latest",
+          "api_key_env": "MISTRAL_API_KEY"
+        },
+        "openai": {
+          "type": "openai",
+          "base_url": "https://api.openai.com/v1",
+          "model": "gpt-4o",
+          "api_key_env": "OPENAI_API_KEY"
+        },
+        "claude": {
+          "type": "anthropic",
+          "base_url": "https://api.anthropic.com/v1",
+          "model": "claude-3-5-sonnet-20241022",
+          "api_key_env": "ANTHROPIC_API_KEY"
+        }
+      }
+    }
+
+  routing_policies.yaml: |
+    routing:
+      classify_task:
+        analysis:
+          - analyze
+          - تحليل
+          - explain
+          - investigate
+          - assess
+        conversation:
+          - hello
+          - chat
+          - مرحبا
+          - talk
+          - discuss
+        summarization:
+          - summarize
+          - ملخص
+          - brief
+          - overview
+          - recap
+        planning:
+          - plan
+          - strategy
+          - خارطة
+          - roadmap
+          - schedule
+        coding:
+          - code
+          - program
+          - debug
+          - implement
+          - function
+
+      weights:
+        analysis:
+          llama: 0.40
+          claude: 0.35
+          mistral: 0.15
+          openai: 0.10
+        conversation:
+          mistral: 0.50
+          openai: 0.25
+          llama: 0.15
+          claude: 0.10
+        summarization:
+          openai: 0.40
+          llama: 0.30
+          claude: 0.20
+          mistral: 0.10
+        planning:
+          claude: 0.50
+          llama: 0.25
+          openai: 0.15
+          mistral: 0.10
+        coding:
+          openai: 0.45
+          claude: 0.30
+          llama: 0.20
+          mistral: 0.05
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ai-bridge-secrets
+  namespace: surooh-intelligence
+type: Opaque
+stringData:
+  OPENAI_API_KEY: "REPLACE_WITH_ACTUAL_KEY"
+  GROQ_API_KEY: "REPLACE_WITH_ACTUAL_KEY"
+  MISTRAL_API_KEY: "REPLACE_WITH_ACTUAL_KEY"
+  ANTHROPIC_API_KEY: "REPLACE_WITH_ACTUAL_KEY"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-bridge
+  namespace: surooh-intelligence
+  labels:
+    app: ai-bridge
+    component: intelligence
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-bridge
+  template:
+    metadata:
+      labels:
+        app: ai-bridge
+    spec:
+      containers:
+      - name: bridge
+        image: python:3.11-slim
+        command: ["python3", "/app/bridge.py"]
+        args: ["--mode", "adaptive", "--port", "7010"]
+        ports:
+        - containerPort: 7010
+          name: http
+        env:
+        - name: BRIDGE_MODE
+          value: "adaptive"
+        - name: BRIDGE_PORT
+          value: "7010"
+        envFrom:
+        - secretRef:
+            name: ai-bridge-secrets
+        volumeMounts:
+        - name: config
+          mountPath: /app/providers_config.json
+          subPath: providers_config.json
+        - name: config
+          mountPath: /app/routing_policies.yaml
+          subPath: routing_policies.yaml
+        - name: app-code
+          mountPath: /app/bridge.py
+          subPath: bridge.py
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 7010
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 7010
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      
+      - name: metrics
+        image: python:3.11-slim
+        command: ["python3", "/app/bridge_metrics.py"]
+        args: ["--port", "7011"]
+        ports:
+        - containerPort: 7011
+          name: metrics
+        volumeMounts:
+        - name: app-code
+          mountPath: /app/bridge_metrics.py
+          subPath: bridge_metrics.py
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+      
+      volumes:
+      - name: config
+        configMap:
+          name: ai-bridge-config
+      - name: app-code
+        configMap:
+          name: ai-bridge-code
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-bridge-service
+  namespace: surooh-intelligence
+  labels:
+    app: ai-bridge
+spec:
+  type: ClusterIP
+  selector:
+    app: ai-bridge
+  ports:
+  - name: http
+    port: 7010
+    targetPort: 7010
+    protocol: TCP
+  - name: metrics
+    port: 7011
+    targetPort: 7011
+    protocol: TCP
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ai-bridge-hpa
+  namespace: surooh-intelligence
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-bridge
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 65
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 75
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60

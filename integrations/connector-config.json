@@ -1,0 +1,67 @@
+[
+  {
+    "id": "newsapi",
+    "name": "NewsAPI Global News",
+    "type": "REST",
+    "baseUrl": "https://newsapi.org",
+    "endpoints": ["/v2/top-headlines"],
+    "auth": "apiKey",
+    "intervalMinutes": 60,
+    "parser": "json",
+    "tags": ["external", "feed", "news", "global"],
+    "priority": 0.9,
+    "enabled": true
+  },
+  {
+    "id": "openmeteo",
+    "name": "Open-Meteo Weather",
+    "type": "REST",
+    "baseUrl": "https://api.open-meteo.com",
+    "endpoints": ["/v1/forecast"],
+    "auth": "none",
+    "intervalMinutes": 180,
+    "parser": "json",
+    "tags": ["external", "feed", "weather", "climate"],
+    "priority": 0.7,
+    "enabled": true
+  },
+  {
+    "id": "coingecko",
+    "name": "CoinGecko Crypto Prices",
+    "type": "REST",
+    "baseUrl": "https://api.coingecko.com",
+    "endpoints": ["/api/v3/simple/price?ids=bitcoin,ethereum,tether,binancecoin,ripple&vs_currencies=usd&include_24hr_change=true&include_market_cap=true"],
+    "auth": "none",
+    "intervalMinutes": 30,
+    "parser": "json",
+    "tags": ["external", "feed", "crypto", "finance"],
+    "priority": 0.8,
+    "enabled": true
+  },
+  {
+    "id": "exchangerate",
+    "name": "Exchange Rates API",
+    "type": "REST",
+    "baseUrl": "https://open.er-api.com",
+    "endpoints": ["/v6/latest/USD"],
+    "auth": "none",
+    "intervalMinutes": 360,
+    "parser": "json",
+    "tags": ["external", "feed", "currency", "finance"],
+    "priority": 0.7,
+    "enabled": true
+  },
+  {
+    "id": "restcountries",
+    "name": "REST Countries API",
+    "type": "REST",
+    "baseUrl": "https://restcountries.com",
+    "endpoints": ["/v3.1/region/asia"],
+    "auth": "none",
+    "intervalMinutes": 1440,
+    "parser": "json",
+    "tags": ["external", "feed", "geography", "countries"],
+    "priority": 0.5,
+    "enabled": false
+  }
+]

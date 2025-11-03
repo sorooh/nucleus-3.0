@@ -1,0 +1,30 @@
+{
+  "reportId": "monthly-1761955213227",
+  "generatedAt": "2025-11-01T00:09:11.632Z",
+  "period": {
+    "start": "2025-10-02T00:00:13.227Z",
+    "end": "2025-11-01T00:00:13.227Z",
+    "durationDays": 30
+  },
+  "summary": {
+    "totalDecisions": 0,
+    "decisionsWithFeedback": 0,
+    "avgConfidence": 0,
+    "avgFeedbackScore": 0,
+    "avgSuccessRate": 0,
+    "avgImpact": 0
+  },
+  "byDecisionType": {},
+  "byNode": {},
+  "topPerformingPatterns": [],
+  "recommendations": [
+    "Low average confidence detected. Increase training data or review decision criteria.",
+    "Success rate below target. Review decision generation logic.",
+    "Low average impact. Consider more aggressive optimization decisions."
+  ],
+  "trends": {
+    "confidenceGrowth": 0,
+    "accuracyImprovement": 0,
+    "learningVelocity": "stable"
+  }
+}

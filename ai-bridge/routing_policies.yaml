@@ -1,0 +1,36 @@
+# Routing weights and task mapping for Nucleus 3.0
+version: 1
+routing:
+  classify_task:
+    # كلمات مفتاحية لتصنيف نوع المهمة
+    analysis: ["analyze","تحليل","explain","justify","audit","policy","قانون","ضريبة","why","how","compare"]
+    conversation: ["chat","reply","respond","convert","support","خدمة","رد","hello","مرحبا"]
+    summarization: ["summarize","ملخّص","تلخيص","extract","نقاط","brief","overview"]
+    planning: ["plan","strategy","roadmap","خارطة","سيناريو","forecast","تنبؤ","تخطيط","future","next"]
+    coding: ["code","program","debug","fix","implement","develop","build","create"]
+  weights:
+    analysis:
+      llama: 0.40
+      claude: 0.35
+      mistral: 0.15
+      openai: 0.10
+    conversation:
+      mistral: 0.50
+      openai: 0.25
+      llama: 0.15
+      claude: 0.10
+    summarization:
+      openai: 0.40
+      llama: 0.30
+      claude: 0.20
+      mistral: 0.10
+    planning:
+      claude: 0.50
+      llama: 0.25
+      openai: 0.15
+      mistral: 0.10
+    coding:
+      openai: 0.45
+      claude: 0.30
+      llama: 0.20
+      mistral: 0.05

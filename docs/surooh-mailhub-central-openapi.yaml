@@ -1,0 +1,220 @@
+openapi: 3.0.3
+info:
+  title: Surooh Mail Hub ↔ Central Memory Core Integration API
+  version: "1.0.0"
+  description: |
+    Official API spec to link **Surooh Mail Hub (Local Core)** with **Surooh Central Memory Core**.
+    - Transport: HTTPS only
+    - Auth: JWT (Bearer) + HMAC-SHA256 signature header
+    - Header: `X-Surooh-Signature` = HMAC_SHA256(secret, raw_body)
+servers:
+  - url: https://mailhub.sorooh.ai
+    description: Mail Hub server
+  - url: https://central.sorooh.ai
+    description: Central Memory Core server
+
+tags:
+  - name: MailHub
+    description: Endpoints exposed by the Mail Hub
+  - name: CentralCore
+    description: Endpoints exposed by the Central Memory Core
+
+components:
+  securitySchemes:
+    bearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  headers:
+    X-Surooh-Signature:
+      description: HMAC-SHA256 signature of the **raw** request body using the shared secret between peers.
+      schema:
+        type: string
+        example: 8ffb12a4ccf98b2e0b...
+
+  schemas:
+    Envelope:
+      type: object
+      required: [source, direction, timestamp, dataType, payload]
+      properties:
+        source:
+          type: string
+          description: MAIL_HUB_CORE or CENTRAL_MEMORY_CORE
+          example: MAIL_HUB_CORE
+        direction:
+          type: string
+          enum: [OUTBOUND, INBOUND]
+          example: OUTBOUND
+        timestamp:
+          type: string
+          format: date-time
+          example: 2025-10-11T00:00:00Z
+        dataType:
+          type: string
+          description: Business message type (EMAIL_SUMMARY, EMAIL_SUMMARIES, AI_FEEDBACK, MODEL_UPDATE, etc.)
+          example: EMAIL_SUMMARIES
+        payload:
+          type: object
+          additionalProperties: true
+          description: Message payload; schema varies by dataType
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Optional metadata (schemaVersion, checksum, etc.)
+
+    EmailSummariesPayload:
+      type: object
+      required: [summaries]
+      properties:
+        summaries:
+          type: array
+          items:
+            type: object
+            required: [messageId, subject, summary]
+            properties:
+              messageId:
+                type: string
+                example: MH-23821
+              sender:
+                type: string
+                example: client@supplier.com
+              recipient:
+                type: string
+                example: ops@sorooh.ai
+              subject:
+                type: string
+                example: New quotation for packaging
+              summary:
+                type: string
+                example: Supplier sent updated quotation for 10k units.
+              sentiment:
+                type: string
+                enum: [positive, neutral, negative]
+                example: positive
+
+    AiFeedbackPayload:
+      type: object
+      required: [recommendedReply]
+      properties:
+        recommendedReply:
+          type: string
+          example: Thank you for the update. Please confirm lead time and shipping cost.
+        confidence:
+          type: number
+          format: float
+          example: 0.93
+        modelVersion:
+          type: string
+          example: CentralModel_2025_10
+
+paths:
+  /mailhub/export:
+    post:
+      tags: [MailHub]
+      summary: Export email summaries/analytics from Mail Hub → Central Core
+      description: Mail Hub pushes condensed email analytics to the central core.
+      security:
+        - bearerJWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Envelope'
+            examples:
+              emailSummaries:
+                summary: Email summaries batch
+                value:
+                  source: MAIL_HUB_CORE
+                  direction: OUTBOUND
+                  timestamp: 2025-10-11T00:00:00Z
+                  dataType: EMAIL_SUMMARIES
+                  payload:
+                    summaries:
+                      - messageId: MH-1
+                        sender: client@supplier.com
+                        subject: New quotation for 10k
+                        summary: Supplier sent updated quotation for 10k units.
+                        sentiment: positive
+      responses:
+        '200':
+          description: Accepted by Mail Hub for forwarding
+        '401':
+          description: Unauthorized (missing/invalid JWT)
+
+  /mailhub/core/sync:
+    post:
+      tags: [MailHub]
+      summary: Central Core → Mail Hub improvements (feedback/model updates)
+      description: Central core posts AI feedback or model updates back to Mail Hub.
+      parameters:
+        - in: header
+          name: X-Surooh-Signature
+          required: true
+          schema:
+            type: string
+          description: HMAC-SHA256 signature using MAILHUB_HMAC_SECRET
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Envelope'
+            examples:
+              aiFeedback:
+                summary: AI feedback sample
+                value:
+                  source: CENTRAL_MEMORY_CORE
+                  direction: INBOUND
+                  timestamp: 2025-10-11T00:01:00Z
+                  dataType: AI_FEEDBACK
+                  payload:
+                    recommendedReply: Thank you for the quote. Please confirm lead time and shipping terms.
+                    confidence: 0.92
+                    modelVersion: CentralModel_2025_10
+      responses:
+        '200':
+          description: Processed by Mail Hub
+        '401':
+          description: Bad signature
+
+  /central/memory/mailhub/export:
+    post:
+      tags: [CentralCore]
+      summary: Mail Hub → Central Core intake endpoint
+      description: Central core receives Mail Hub exports. Requires JWT and HMAC signature.
+      security:
+        - bearerJWT: []
+      parameters:
+        - in: header
+          name: X-Surooh-Signature
+          required: true
+          schema:
+            type: string
+          description: HMAC-SHA256 signature using CENTRAL_HMAC_SECRET
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Envelope'
+            examples:
+              emailSummaries:
+                summary: Email summaries batch
+                value:
+                  source: MAIL_HUB_CORE
+                  direction: OUTBOUND
+                  timestamp: 2025-10-11T00:00:00Z
+                  dataType: EMAIL_SUMMARIES
+                  payload:
+                    summaries:
+                      - messageId: MH-1
+                        sender: client@supplier.com
+                        subject: New quotation for 10k
+                        summary: Supplier sent updated quotation for 10k units.
+                        sentiment: positive
+      responses:
+        '200':
+          description: Stored and processed by Central Core
+        '401':
+          description: Unauthorized/JWT invalid or bad signature

@@ -1,0 +1,96 @@
+{
+  "id": "legal-eds-invest-117548",
+  "type": "legal-matter",
+  "priority": "medium",
+  "status": "active",
+  "created": "2025-10-21",
+  "title": "متابعة مطالبة EDS INVEST",
+  "description": "متابعة الرد على إشعار تحصيل الديون المرفوض",
+  "details": {
+    "creditor": "UAB EDS INVEST",
+    "client_code": "117548",
+    "amount_claimed": "785.10 EUR",
+    "notice_date": "2025-10-21",
+    "deadline_given": "2025-10-30",
+    "response_sent": "2025-10-21",
+    "response_type": "formal_rejection"
+  },
+  "actions_taken": [
+    {
+      "date": "2025-10-21",
+      "action": "received_notice",
+      "description": "استلام إشعار تحصيل ديون"
+    },
+    {
+      "date": "2025-10-21",
+      "action": "sent_rejection",
+      "description": "إرسال رد رسمي برفض المطالبة وطلب حذف البيانات"
+    },
+    {
+      "date": "2025-10-21",
+      "action": "documented",
+      "description": "توثيق كامل في nucleus/memory/legal-notice-2025-10-21.md"
+    }
+  ],
+  "next_steps": [
+    {
+      "action": "monitor_response",
+      "due_date": "2025-11-05",
+      "description": "مراقبة استلام رد من EDS INVEST (2 أسابيع)",
+      "completed": false
+    },
+    {
+      "action": "check_credit_bureau",
+      "due_date": "2025-11-21",
+      "description": "التحقق من عدم الإبلاغ لسجلات الائتمان (شهر)",
+      "completed": false
+    },
+    {
+      "action": "verify_data_deletion",
+      "due_date": "2025-11-21",
+      "description": "التأكد من حذف البيانات الشخصية (شهر)",
+      "completed": false
+    },
+    {
+      "action": "legal_consult_if_needed",
+      "due_date": "on_escalation",
+      "description": "استشارة قانونية إذا استمرت المطالبات",
+      "completed": false
+    }
+  ],
+  "contact_info": {
+    "company": "UAB EDS INVEST",
+    "email": "skolos@eds.lt",
+    "phone": "+370 618 38113"
+  },
+  "legal_basis": {
+    "claim_validity": "invalid",
+    "contractual_relationship": false,
+    "services_received": false,
+    "invoices_received": false,
+    "gdpr_rights_invoked": [
+      "right_to_erasure",
+      "right_to_object",
+      "right_to_restrict_processing"
+    ]
+  },
+  "risk_assessment": {
+    "fraud_indicators": [
+      "unsolicited_claim",
+      "no_prior_relationship",
+      "no_supporting_documentation",
+      "short_deadline_pressure",
+      "immediate_legal_threats"
+    ],
+    "recommended_action": "do_not_pay",
+    "escalation_threshold": "if_credit_bureau_reporting_occurs"
+  },
+  "tags": [
+    "legal",
+    "debt-collection",
+    "disputed",
+    "gdpr",
+    "consumer-protection",
+    "potential-fraud"
+  ]
+}

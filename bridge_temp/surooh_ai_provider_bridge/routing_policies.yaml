@@ -1,0 +1,30 @@
+# Routing weights and task mapping
+version: 1
+routing:
+  classify_task:
+    # كلمات مفتاحية لتصنيف نوع المهمة
+    analysis: ["analyze","تحليل","explain","justify","audit","policy","قانون","ضريبة"]
+    conversation: ["chat","reply","respond","convert","support","خدمة","رد"]
+    summarization: ["summarize","ملخّص","تلخيص","extract","نقاط"]
+    planning: ["plan","strategy","roadmap","خارطة","سيناريو","forecast","تنبؤ","تخطيط"]
+  weights:
+    analysis:
+      llama: 0.55
+      claude: 0.30
+      mistral: 0.10
+      falcon: 0.05
+    conversation:
+      mistral: 0.60
+      llama: 0.20
+      claude: 0.15
+      falcon: 0.05
+    summarization:
+      falcon: 0.50
+      llama: 0.25
+      claude: 0.15
+      mistral: 0.10
+    planning:
+      claude: 0.55
+      llama: 0.25
+      mistral: 0.10
+      falcon: 0.10
