@@ -1,0 +1,60 @@
+MIT License
+
+Copyright (c) 2024 Sorooh Technologies - Nucleus AI Systems
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+ADDITIONAL TERMS FOR NUCLEUS 3.0:
+
+1. COMMERCIAL USE: This software may be used for commercial purposes under the MIT license terms.
+
+2. AI TRAINING: The code and documentation in this repository may be used for AI model training and development.
+
+3. ATTRIBUTION: When using this software in production, please include attribution to "Nucleus 3.0 by Sorooh Technologies" in your application's about section or documentation.
+
+4. ENTERPRISE SUPPORT: For enterprise support and commercial licensing arrangements, contact: enterprise@nucleus.ai
+
+5. EXPORT COMPLIANCE: Users are responsible for compliance with export control laws when using this software internationally.
+
+---
+
+THIRD-PARTY LICENSES:
+
+This software includes components from various open-source projects. See the 'node_modules' directory and package.json files for detailed licensing information of dependencies.
+
+Key dependencies and their licenses:
+- Next.js: MIT License
+- TypeScript: Apache License 2.0
+- Tailwind CSS: MIT License
+- Drizzle ORM: Apache License 2.0
+- Various npm packages: See individual package licenses
+
+---
+
+DISCLAIMER:
+
+The AI capabilities provided by this software are for automation and assistance purposes. Users are responsible for ensuring appropriate use of AI-generated content and compliance with applicable laws and regulations.
+
+This software is provided as-is and the authors make no warranties regarding its performance, security, or suitability for any particular purpose. Users should thoroughly test the software before deploying in production environments.
+
+---
+
+For questions about licensing, please contact: legal@nucleus.ai
